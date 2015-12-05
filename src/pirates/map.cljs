@@ -178,8 +178,8 @@
                     (when (kb/pressed? kb k)
                       (action)))
 
-                  ;;(.translateX ship -0.05)
-                  (set! (.-x ship) (- (.-x ship) 0.05))
+                  ;; TODO: add an extern for advanced
+                  (.translateX ship -0.05)
                   (set! (.. camera -position -x) (.. ship -position -x))
                   (set! (.. camera -position -z) (- (.. ship -position -z) 10))
                   (when-let [model (aget (.-children ship) 0)]

@@ -1,6 +1,6 @@
 # Pirates
 
-Win at all costs!
+http://timothypratley.github.io/pirates/
 
 ## Overview
 
