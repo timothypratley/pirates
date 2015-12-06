@@ -61,7 +61,6 @@
                   plane (js/THREE.Mesh. geometry material)
                   data (get-height-data img)]
               (set! (.. plane -rotation -x) (/ js/Math.PI -2))
-              (set! (.. plane -rotation -z) js/Math.PI)
               (dotimes [i (* w h)]
                 (set! (-> plane .-geometry .-vertices (aget i) .-z) (nth data i)))
               (.add scene plane))))
@@ -84,35 +83,107 @@
     (.setPixelRatio js/window.devicePixelRatio)
     (.setSize width height)))
 
+(defn altitude [camera dy]
+  (set! (.. camera -position -y)
+        (min 500 (max 1 (+ (.. camera -position -y)
+                           (/ (.. camera -position -y) dy))))))
+
+(defn handle-keyboard [kb camera ship]
+  (doseq [[k action]
+          [[KeyCodes/LEFT
+            (fn a-left-action []
+              (set! (.. ship -rotation -y)
+                    (+ (.. ship -rotation -y) 0.03))
+              (when-let [model (aget (.-children ship) 0)]
+                (set! (.. model -rotation -x) -0.2)))]
+           [KeyCodes/RIGHT
+            (fn a-right-action []
+              (set! (.. ship -rotation -y)
+                    (- (.. ship -rotation -y) 0.03))
+              (when-let [model (aget (.-children ship) 0)]
+                (set! (.. model -rotation -x) 0.2)))]
+           [KeyCodes/UP
+            (fn an-up-action []
+              (altitude camera 10))]
+           [KeyCodes/DOWN
+            (fn a-down-action []
+              (altitude camera -10))]]]
+    (when (kb/pressed? kb k)
+      (action))))
+
 (def towns
-  [[100 100]
+  [[100 110]
    [-300 100]
    [-100 -100]
-   [100 -100]])
+   [100 -150]])
+
+(defn load-towns [scene]
+  (doseq [[x z] towns]
+    (let [town (js/THREE.Mesh.
+                 (js/THREE.BoxGeometry. 10 10 10)
+                 (js/THREE.MeshBasicMaterial. #js {:color "red"}))]
+      (set! (.. town -position -x) x)
+      (set! (.. town -position -z) z)
+      (.add scene town))))
+
+(defn create-water [scene renderer camera directionalLight]
+  (let [normals (js/THREE.ImageUtils.loadTexture. "img/waternormals.jpg")]
+    (set! (.-wrapS normals) js/THREE.RepeatWrapping)
+    (set! (.-wrapT normals) js/THREE.RepeatWrapping)
+    (let [water (js/THREE.Water.
+                  renderer camera scene
+                  #js {:textureWidth 512,
+                       :textureHeight 512,
+                       :waterNormals normals,
+                       :alpha 0.8,
+                       :sunDirection (-> (.-position directionalLight)
+                                         (.clone)
+                                         (.normalize))
+                       :sunColor 0xffffff,
+                       :waterColor 0x001e0f,
+                       :distortionScale 35})
+          mirror (js/THREE.Mesh.
+                   (js/THREE.PlaneBufferGeometry. 1000, 1000),
+                   (.-material water))]
+      (set! (.. mirror -rotation -x) (/ js/Math.PI -2))
+      (.add mirror water)
+      (.add scene mirror)
+      water)))
+
+(def epsilon
+  0.1)
+
+(defn near? [x1 z1 x2 z2]
+  (and (< (js/Math.abs (- x2 x1)) epsilon)
+       (< (js/Math.abs (- z2 z1)) epsilon)))
+
+(defn near-city? [ship]
+  (some
+    (fn [[townx townz]]
+      (near? (.. ship -position -x) (.. ship -position -z)
+             townx townz))
+    towns))
+
+(defn map-mouse [ship e]
+  (let [rect (.getBoundingClientRect (.-target e))
+        x (- (- (.-clientX e) (.-left rect)) (/ (.-width rect) 2))
+        y (- (/ (.-height rect) 2) (- (.-clientY e) (.-top rect)))]
+    (set! (.. ship -rotation -y)
+          (js/Math.atan2 (- y) (- x)))))
 
 (defn world-map [game]
   (let [camera (js/THREE.PerspectiveCamera. 75 (/ width height) 0.1 1000)
         scene (js/THREE.Scene.)
         raf (atom nil)
         ship (js/THREE.Object3D.)
-        kb (kb/create)]
-    (doseq [[x z] towns]
-      (let [town (js/THREE.Mesh.
-                   (js/THREE.BoxGeometry. 10 10 10)
-                   (js/THREE.MeshBasicMaterial. #js {:color "red"}))]
-        (set! (.. town -position -x) x)
-        (set! (.. town -position -z) z)
-        (.add scene town)))
-
-    (load-model "pirate-ship-large.json" ship)
-
+        kb (kb/create)
+        mouse-down (atom false)]
     (set! (.. camera -position -y) 5)
+    (load-model "pirate-ship-large.json" ship)
     (.add scene ship)
     (create-terrain scene)
-
-    (let [al (js/THREE.AmbientLight. 0x888888)]
-      (.add scene al))
-
+    (load-towns scene)
+    (.add scene (js/THREE.AmbientLight. 0x888888))
     (loadSkyBox scene)
 
     (reagent/create-class
@@ -120,7 +191,29 @@
        :reagent-render
        (fn world-map-render [game]
          [:canvas
-          #_[:img {:src "img/caribbean.png"}]])
+          {:style {:cursor "pointer"}
+           :unselectable "on"
+           :on-click
+           (fn map-click [e]
+             (map-mouse ship e))
+           :on-wheel
+           (fn [e]
+             (altitude camera (/ 500 (.-deltaY e))))
+           :on-mouse-down
+           (fn map-mouse-down [e]
+             (when (zero? (.-button e))
+               (reset! mouse-down true)))
+           :on-mouse-up
+           (fn map-mouse-up [e]
+             (when (zero? (.-button e))
+               (reset! mouse-down false)))
+           :on-blur
+           (fn map-blur [e]
+             (reset! mouse-down false))
+           :on-mouse-move
+           (fn map-mouse-move [e]
+             (when @mouse-down
+               (map-mouse ship e)))}])
        :component-did-mount
        (fn world-map-did-mount [this]
          (let [renderer (create-renderer (.getDOMNode this))
@@ -128,68 +221,25 @@
            (kb/listen kb)
            (.set (.-position directionalLight) -600 300 600)
            (.add scene directionalLight)
-           (let [waterNormals (js/THREE.ImageUtils.loadTexture. "img/waternormals.jpg")]
-             (set! (.-wrapS waterNormals) js/THREE.RepeatWrapping)
-             (set! (.-wrapT waterNormals) js/THREE.RepeatWrapping)
-
-             (let [d (.normalize (.clone (.-position directionalLight)))
-                   water (js/THREE.Water.
-                           renderer camera scene
-                           #js {:textureWidth 512,
-                                :textureHeight 512,
-                                :waterNormals waterNormals,
-                                :alpha 0.8,
-                                :sunDirection d,
-                                :sunColor 0xffffff,
-                                :waterColor 0x001e0f,
-                                :distortionScale 35})
-                   aMeshMirror (js/THREE.Mesh.
-                                 (js/THREE.PlaneBufferGeometry. 1000, 1000),
-                                 (.-material water))]
-               (set! (.. aMeshMirror -rotation -x) (* js/Math.PI -0.5))
-               (.add aMeshMirror water)
-               (.add scene aMeshMirror)
-               ((fn world-map-three-render [t]
-                  (reset! raf (js/window.requestAnimationFrame world-map-three-render))
-
-                  (doseq [[k action]
-                          [[KeyCodes/LEFT
-                            (fn a-left-action []
-                              (set! (.. ship -rotation -y)
-                                    (+ (.. ship -rotation -y) 0.03))
-                              (when-let [model (aget (.-children ship) 0)]
-                                (set! (.. model -rotation -x) -0.2)))]
-                           [KeyCodes/RIGHT
-                            (fn a-right-action []
-                              (set! (.. ship -rotation -y)
-                                    (- (.. ship -rotation -y) 0.03))
-                              (when-let [model (aget (.-children ship) 0)]
-                                (set! (.. model -rotation -x) 0.2)))]
-                           [KeyCodes/UP
-                            (fn an-up-action []
-                              (set! (.. camera -position -y)
-                                    (min 500 (+ (.. camera -position -y)
-                                                (/ (.. camera -position -y) 10)))))]
-                           [KeyCodes/DOWN
-                            (fn a-down-action []
-                              (set! (.. camera -position -y)
-                                    (max 1 (- (.. camera -position -y)
-                                              (/ (.. camera -position -y) 10)))))]]]
-                    (when (kb/pressed? kb k)
-                      (action)))
-
-                  ;; TODO: add an extern for advanced
-                  (.translateX ship -0.05)
-                  (set! (.. camera -position -x) (.. ship -position -x))
-                  (set! (.. camera -position -z) (- (.. ship -position -z) 10))
-                  (when-let [model (aget (.-children ship) 0)]
-                    (set! (.. model -rotation -z) (/ (js/Math.sin (/ t 500)) 20)))
-                  (.lookAt camera ship.position)
-                  ;; TODO: how to access in advanced compilation?
-                  (set! (.. water -material -uniforms -time -value)
-                        (+ (.. water -material -uniforms -time -value) (/ 1 480)))
-                  (.render water)
-                  (.render renderer scene camera)))))))
+           (let [water (create-water scene renderer camera directionalLight)]
+             ((fn world-map-three-render [t]
+                ;; TODO: just set! on this?
+                (reset! raf (js/window.requestAnimationFrame world-map-three-render))
+                (handle-keyboard kb camera ship)
+                ;; TODO: add an extern for advanced
+                (.translateX ship -0.05)
+                (when (near-city? ship)
+                  (swap! game assoc :status :in-port))
+                (set! (.. camera -position -x) (.. ship -position -x))
+                (set! (.. camera -position -z) (+ (.. ship -position -z) 10))
+                (when-let [model (aget (.-children ship) 0)]
+                  (set! (.. model -rotation -z) (/ (js/Math.sin (/ t 500)) 20)))
+                (.lookAt camera ship.position)
+                ;; TODO: how to access in advanced compilation?
+                (set! (.. water -material -uniforms -time -value)
+                      (+ (.. water -material -uniforms -time -value) (/ 1 480)))
+                (.render water)
+                (.render renderer scene camera))))))
        :component-will-unmount
        (fn world-map-will-unmount [this]
          (js/window.cancelAnimationFrame @raf)
