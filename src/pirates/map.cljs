@@ -73,15 +73,11 @@
              (set! (.-x obj.position) -0.5)
              (.add parent obj)))))
 
-(def width 800)
-(def height 600)
-
 (defn create-renderer [element]
   (doto
     (js/THREE.WebGLRenderer. #js {:antialias true :canvas element})
     ;; TODO: make externs for advanced compilation
-    (.setPixelRatio js/window.devicePixelRatio)
-    (.setSize width height)))
+    (.setPixelRatio js/window.devicePixelRatio)))
 
 (defn altitude [camera dy]
   (set! (.. camera -position -y)
@@ -151,7 +147,7 @@
       water)))
 
 (def epsilon
-  0.1)
+  1)
 
 (defn near? [x1 z1 x2 z2]
   (and (< (js/Math.abs (- x2 x1)) epsilon)
@@ -172,12 +168,13 @@
           (js/Math.atan2 (- y) (- x)))))
 
 (defn world-map [game]
-  (let [camera (js/THREE.PerspectiveCamera. 75 (/ width height) 0.1 1000)
+  (let [camera (js/THREE.PerspectiveCamera. 75 2 0.1 1000)
         scene (js/THREE.Scene.)
         raf (atom nil)
         ship (js/THREE.Object3D.)
         kb (kb/create)
-        mouse-down (atom false)]
+        mouse-down (atom false)
+        resize (atom nil)]
     (set! (.. camera -position -y) 5)
     (load-model "pirate-ship-large.json" ship)
     (.add scene ship)
@@ -191,7 +188,8 @@
        :reagent-render
        (fn world-map-render [game]
          [:canvas
-          {:style {:cursor "pointer"}
+          {:style {:cursor "pointer"
+                   :width "100%"}
            :unselectable "on"
            :on-click
            (fn map-click [e]
@@ -213,11 +211,24 @@
            :on-mouse-move
            (fn map-mouse-move [e]
              (when @mouse-down
-               (map-mouse ship e)))}])
+               (map-mouse ship e)))
+           :on-resize
+           (fn map-resize [e]
+             (prn "hi"))}])
        :component-did-mount
        (fn world-map-did-mount [this]
-         (let [renderer (create-renderer (.getDOMNode this))
-               directionalLight (js/THREE.DirectionalLight. 0xffff88 1)]
+         (let [element (.getDOMNode this)
+               renderer (create-renderer element)
+               directionalLight (js/THREE.DirectionalLight. 0xffff88 1)
+               on-resize (fn []
+                           (let [w (* 0.9 js/window.innerWidth)
+                                 h (* 0.7 js/window.innerHeight)]
+                             (set! (.-aspect camera) (/ w h))
+                             (.updateProjectionMatrix camera)
+                             (.setSize renderer w h)))]
+           (reset! resize on-resize)
+           (on-resize)
+           (js/window.addEventListener "resize" on-resize)
            (kb/listen kb)
            (.set (.-position directionalLight) -600 300 600)
            (.add scene directionalLight)
@@ -227,7 +238,9 @@
                 (reset! raf (js/window.requestAnimationFrame world-map-three-render))
                 (handle-keyboard kb camera ship)
                 ;; TODO: add an extern for advanced
-                (.translateX ship -0.05)
+                ;; TODO: put x/y in game instead of ship?
+                (when (= (:status @game) :sailing)
+                  (.translateX ship -0.05))
                 (when (near-city? ship)
                   (swap! game assoc :status :in-port))
                 (set! (.. camera -position -x) (.. ship -position -x))
@@ -242,5 +255,7 @@
                 (.render renderer scene camera))))))
        :component-will-unmount
        (fn world-map-will-unmount [this]
+         ;; TODO: less atomizing
+         (js/window.removeEventListener "resize" @resize)
          (js/window.cancelAnimationFrame @raf)
          (kb/unlisten kb))})))
