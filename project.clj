@@ -8,7 +8,7 @@
                  [org.clojure/clojurescript "1.7.170"]
                  [org.clojure/core.async "0.2.374"]
                  [cljsjs/three "0.0.72-0"]
-                 [cljsjs/three-water-material "1.0.0"]
+                 [cljsjs/ocean "1.0.0"]
                  [devcards "0.2.1"]
                  [reagent "0.5.1"]]
 
