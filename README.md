@@ -1,12 +1,23 @@
 # Pirates
 
-http://timothypratley.github.io/pirates/
+http://timothypratley.github.io/pirates.client/
+
 
 ## Overview
 
 Sail around
 
-## Setup
+
+## Deployment
+
+`./deploy.sh`
+
+
+## Development
+
+To start the server
+
+    lein run
 
 To get an interactive development environment run:
 
@@ -32,8 +43,9 @@ To create a production build run:
 And open your browser in `resources/public/index.html`. You will not
 get live reloading, nor a REPL.
 
+
 ## License
 
-Copyright © 2015 Timothy Pratley
+Copyright © 2016 Timothy Pratley
 
 Distributed under the Eclipse Public License either version 1.0 or (at your option) any later version.

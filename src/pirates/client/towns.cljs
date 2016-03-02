@@ -1,4 +1,4 @@
-(ns pirates.towns
+(ns pirates.client.towns
   (:require
     [cljsjs.three]
     [devcards.core :refer-macros [defcard-rg]]

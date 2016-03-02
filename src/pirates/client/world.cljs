@@ -1,5 +1,5 @@
-(ns pirates.world
-  (:require [pirates.towns :as towns]))
+(ns pirates.client.world
+  (:require [pirates.client.towns :as towns]))
 
 (defn near? [x1 z1 x2 z2]
   (< (+ (js/Math.pow (- x2 x1) 2)

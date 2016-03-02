@@ -1,10 +1,10 @@
-(ns pirates.map
+(ns pirates.client.map
   (:require
     [cljsjs.three]
-    [pirates.keyboard :as keyboard]
-    [pirates.scenery :as scenery]
-    [pirates.towns :as towns]
-    [pirates.world :as world]
+    [pirates.client.keyboard :as keyboard]
+    [pirates.client.scenery :as scenery]
+    [pirates.client.towns :as towns]
+    [pirates.client.world :as world]
     [reagent.core :as reagent]))
 
 (defn create-renderer [element]
@@ -21,12 +21,14 @@
           (js/Math.atan2 (- y) (- x)))))
 
 (defn world-map [app-state]
-  (let [scene (js/THREE.Scene.)
+  (let [raf (atom nil)
         camera (doto (js/THREE.PerspectiveCamera. 75 2 0.1 1000)
-                 (-> (.. -position -y) (set! 5)))
-        raf (atom nil)
+                 (-> (.-position) (.set 0 5 10))
+                 (.lookAt (js/THREE.Vector3. 0 0 0)))
         ship (doto (js/THREE.Object3D.)
-               (->> (.add scene)))
+               (.add camera))
+        scene (doto (js/THREE.Scene.)
+                (.add ship))
         keyboard (keyboard/create)
         mouse-down (atom false)
         resize (atom nil)]
@@ -38,9 +40,8 @@
       {:display-name "world-map"
        :reagent-render
        (fn world-map-render [app-state]
-         (when-let [[x y z] (get-in @app-state [:camera :position])]
-           (.set (.-position camera) x y z))
-         (towns/load-towns scene (:towns @app-state))
+         #_(when-let [[x y z] (get-in @app-state [:camera :position])]
+             (.set (.-position camera) x y z))
          [:canvas
           {:style {:cursor "pointer"
                    :width "100%"}
@@ -89,7 +90,7 @@
            ((fn world-map-three-render [t]
               ;; TODO: just set! on this?
               (reset! raf (js/window.requestAnimationFrame world-map-three-render))
-              (when-let [model (aget (.-children ship) 0)]
+              (when-let [model (aget (.-children ship) 1)]
                 (set! (.. model -rotation -z) (/ (js/Math.sin (/ t 500)) 20))
                 (set! (.. model -rotation -x) (/ (js/Math.sin (/ t 600)) 20)))
               (keyboard/handle-keyboard keyboard camera ship)
@@ -97,13 +98,16 @@
               ;; TODO: put x/y in game instead of ship?
               (when (= (:status @app-state) :sailing)
                 (.translateX ship -0.05)
+                (swap! app-state assoc :user
+                       {:location (vec (.toArray (.. ship -position)))
+                        :heading (.. ship -rotation -y)})
                 (when-let [town (world/near-town? ship (:towns @app-state))]
                   (swap! app-state assoc
                          :status :in-port
                          :town town)))
-              (set! (.. camera -position -x) (.. ship -position -x))
-              (set! (.. camera -position -z) (+ (.. ship -position -z) 10))
-              (.lookAt camera ship.position)
+              ;;              (set! (.. camera -position -x) (.. ship -position -x))
+              ;;(set! (.. camera -position -z) (+ (.. ship -position -z) 10))
+              ;;(.lookAt camera ship.position)
               ;; TODO: how to access in advanced compilation?
               (set! (.. water -material -uniforms -time -value)
                     (+ (.. water -material -uniforms -time -value) (/ 1 480)))

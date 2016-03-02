@@ -1,5 +1,5 @@
-/resources/public/js/compiled/**
-/resources/public/js/devcards/**
+/resources/public/js/compiled/
+/resources/public/js/devcards/
 figwheel_server.log
 pom.xml
 *jar
@@ -7,10 +7,7 @@ pom.xml
 /classes/
 /out/
 /target/
-.lein-deps-sum
-.lein-repl-history
-.lein-plugins/
-.lein-failures
+.lein-*
 .repl
 .nrepl-port
 .idea

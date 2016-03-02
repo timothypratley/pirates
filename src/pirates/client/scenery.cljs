@@ -1,4 +1,5 @@
-(ns pirates.scenery
+(ns pirates.client.scenery
+  "Y is up!"
   (:require
     [cljsjs.three]
     [cljsjs.ocean]))

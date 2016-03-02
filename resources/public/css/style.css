@@ -1,2 +1,11 @@
 /* some style */
+@font-face {
+    font-family:"Pieces of Eight";
+    src: url("Pieces-of-Eight.ttf") /* TTF file for CSS3 browsers */
+}
 
+html *
+{
+font-family: Pieces of Eight;
+font-size: larger;
+}

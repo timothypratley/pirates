@@ -1,3 +1,3 @@
-(ns pirates.init)
+(ns pirates.client.init)
 
 (enable-console-print!)
