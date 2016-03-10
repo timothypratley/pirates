@@ -31,10 +31,9 @@
 
 (defmulti event-msg-handler :id)
 (defn event-msg-handler* [{:as ev-msg :keys [id ?data event]}]
-  (log/debug "Event:" event)
   (event-msg-handler ev-msg))
 
-(defmethod event-msg-handler :default                       ; Fallback
+(defmethod event-msg-handler :default
   [{:as ev-msg :keys [event]}]
   (log/debug "Unhandled event:" event))
 
@@ -46,13 +45,15 @@
 
 (defmethod event-msg-handler :chsk/recv
   [{:as ev-msg :keys [?data]}]
-  (log/debug "Push event from server:" ?data)
-  #_(session/update-in! [:model] patchin/patch (second ?data)))
+  (swap! model/app-state assoc :players (second ?data)))
 
 (defmethod event-msg-handler :chsk/handshake
   [{:as ev-msg :keys [?data]}]
   (let [[?uid ?csrf-token ?handshake-data] ?data]
-    (log/debug "Handshake:" ?data)))
+    (log/debug "Handshake:" ?data)
+    ;; TODO: use real login form
+    (when (= ?uid ::sente/nil-uid)
+      (login "tim"))))
 
 (def router (atom nil))
 
@@ -77,9 +78,10 @@
 #_(add-watch session/state :k maybe-send-viewpoint)
 
 (defn f []
-  (chsk-send! [:pirates/user (:user @model/app-state)])
+  (when-let [status (:user @model/app-state)]
+    (chsk-send! [:pirates/status status]))
   (js/window.setTimeout
     f
-    1000))
+    200))
 
 (f)

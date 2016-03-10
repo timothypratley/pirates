@@ -90,6 +90,17 @@
            ((fn world-map-three-render [t]
               ;; TODO: just set! on this?
               (reset! raf (js/window.requestAnimationFrame world-map-three-render))
+              ;; other players
+              (doseq [[player-id [x z heading]] (:players @app-state)
+                      :let [player (or (.getObjectByName scene player-id)
+                                       (let [o (js/THREE.Object3D.)]
+                                         (set! (.-name o) player-id)
+                                         (scenery/load-model "pirate-ship-large.json" o)
+                                         (.add scene o)
+                                         o))]]
+                (.set (.-position player) x 0 z)
+                (.set (.-rotation player) 0 heading 0))
+              ;; wave rolling
               (when-let [model (aget (.-children ship) 1)]
                 (set! (.. model -rotation -z) (/ (js/Math.sin (/ t 500)) 20))
                 (set! (.. model -rotation -x) (/ (js/Math.sin (/ t 600)) 20)))
@@ -99,8 +110,9 @@
               (when (= (:status @app-state) :sailing)
                 (.translateX ship -0.05)
                 (swap! app-state assoc :user
-                       {:location (vec (.toArray (.. ship -position)))
-                        :heading (.. ship -rotation -y)})
+                       [(.. ship -position -x)
+                        (.. ship -position -z)
+                        (.. ship -rotation -y)])
                 (when-let [town (world/near-town? ship (:towns @app-state))]
                   (swap! app-state assoc
                          :status :in-port

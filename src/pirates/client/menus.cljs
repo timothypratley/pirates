@@ -1,12 +1,15 @@
 (ns pirates.client.menus
   (:require
-    ;;[cljs.test :refer :all]
     [devcards.core :refer-macros [defcard-rg]]
     [reagent.core :as reagent]))
 
 (defn menu [app-state]
   [:ul
    {:style {:list-style-type "none"}}
+   [:li
+    [:input {:type "text"
+             :style {:width "100%"}}]
+    ]
    [:li
     [:button
      {:style {:width "100%"}
@@ -60,9 +63,6 @@
 
 (defcard-rg menu-example
   [menu-example-component])
-
-#_(deftest a
-  (is (= 1 2)))
 
 (defn governor [app-state]
   [panel "governor"
