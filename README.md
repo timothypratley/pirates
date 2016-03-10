@@ -1,6 +1,6 @@
 # Pirates
 
-http://timothypratley.github.io/pirates.client/
+http://timothypratley.github.io/pirates
 
 
 ## Overview
