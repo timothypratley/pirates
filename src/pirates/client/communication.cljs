@@ -2,7 +2,6 @@
   (:require
     [pirates.client.logging :as log]
     [pirates.client.model :as model]
-    [timothypratley.patchin :as patchin]
     [taoensso.sente :as sente]
     [taoensso.encore :as encore]))
 
@@ -49,11 +48,9 @@
 
 (defmethod event-msg-handler :chsk/handshake
   [{:as ev-msg :keys [?data]}]
-  (let [[?uid ?csrf-token ?handshake-data] ?data]
-    (log/debug "Handshake:" ?data)
-    ;; TODO: use real login form
-    (when (= ?uid ::sente/nil-uid)
-      (login "tim"))))
+  (let [[?uid ?csrf-token] ?data]
+    (log/debug "Handshake:" ?uid ?csrf-token)
+    (swap! model/app-state assoc :uid ?uid)))
 
 (def router (atom nil))
 

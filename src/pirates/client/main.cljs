@@ -14,7 +14,7 @@
     :border "1px solid #555"
     :display "flex"
     :flex-flow "row"}
-   [:h1 "Pirates!"]
+   [:h1 "Pirates! " (:uid @model/app-state)]
    (when (not= (:status @model/app-state) :sailing)
      [menus/in-port model/app-state])
    [map/world-map model/app-state]])

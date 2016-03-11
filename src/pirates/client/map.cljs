@@ -5,6 +5,7 @@
     [pirates.client.scenery :as scenery]
     [pirates.client.towns :as towns]
     [pirates.client.world :as world]
+    [pirates.client.text-sprite :as text-sprite]
     [reagent.core :as reagent]))
 
 (defn create-renderer [element]
@@ -26,7 +27,8 @@
                  (-> (.-position) (.set 0 5 10))
                  (.lookAt (js/THREE.Vector3. 0 0 0)))
         ship (doto (js/THREE.Object3D.)
-               (.add camera))
+               (.add camera)
+               (.add (text-sprite/make (:uid @app-state))))
         scene (doto (js/THREE.Scene.)
                 (.add ship))
         keyboard (keyboard/create)
@@ -92,9 +94,11 @@
               (reset! raf (js/window.requestAnimationFrame world-map-three-render))
               ;; other players
               (doseq [[player-id [x z heading]] (:players @app-state)
+                      :when (not= player-id (:uid @app-state))
                       :let [player (or (.getObjectByName scene player-id)
                                        (let [o (js/THREE.Object3D.)]
                                          (set! (.-name o) player-id)
+                                         (.add o (text-sprite/make player-id))
                                          (scenery/load-model "pirate-ship-large.json" o)
                                          (.add scene o)
                                          o))]]

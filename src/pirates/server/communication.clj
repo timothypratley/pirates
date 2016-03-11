@@ -24,21 +24,15 @@
 
 (defmulti msg :id)
 
-(defn event-msg-handler [{:keys [event] :as ev-msg}]
-  (msg ev-msg))
+(defmethod msg :pirates/status [{:keys [?data uid]}]
+  (world/add-player uid ?data))
 
-;; Message Handlers
+(defmethod msg :chsk/uidport-open [{:keys [uid client-id]}]
+  (println "New connection:" uid client-id))
 
-(defmethod msg :pirates/status [{:keys [client-id ?data]}]
-  (world/add-player client-id ?data))
-
-(defmethod msg :chsk/uidport-open [{:keys [client-id]}]
-  (println "New connection:" client-id))
-
-(defmethod msg :chsk/uidport-close [{:keys [ring-req]}]
-  (when-let [uid (get-in ring-req [:session :uid])]
-    (println "Disconnected:" uid)
-    (world/remove-player uid)))
+(defmethod msg :chsk/uidport-close [{:keys [uid]}]
+  (println "Disconnected:" uid)
+  (world/remove-player uid))
 
 (defmethod msg :chsk/ws-ping [_])
 

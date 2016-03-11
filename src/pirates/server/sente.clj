@@ -31,7 +31,7 @@
 
 (defn new-channel-sockets
   ([event-msg-handler server-adapter]
-   (new-channel-sockets event-msg-handler server-adapter {}))
+   (new-channel-sockets event-msg-handler server-adapter))
   ([event-msg-handler server-adapter options]
    (map->ChannelSockets {:server-adapter server-adapter
                          :event-msg-handler event-msg-handler
