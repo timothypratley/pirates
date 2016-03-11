@@ -6,7 +6,7 @@
     [taoensso.encore :as encore]))
 
 (let [{:keys [chsk ch-recv send-fn state]}
-      (sente/make-channel-socket! "/chsk" {:type :auto})]
+      (sente/make-channel-socket! "/chsk" {:type :auto :host "localhost:3000"})]
   (def chsk chsk)
   (def ch-chsk ch-recv)
   (def chsk-send! send-fn)

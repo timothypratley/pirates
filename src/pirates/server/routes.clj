@@ -3,7 +3,7 @@
     [reloaded.repl :refer [system]]
     [compojure.core :refer [GET POST routes]]
     [compojure.route :refer [not-found resources]]
-    [ring.middleware.anti-forgery]
+    [ring.middleware.cors :refer [wrap-cors]]
     [ring.middleware.defaults :refer [site-defaults wrap-defaults]]))
 
 (defn unique-uid [user-id]
@@ -36,4 +36,8 @@
     (not-found "Not Found")))
 
 (def handler
-  (wrap-defaults site-routes site-defaults))
+  (wrap-cors
+    (wrap-defaults site-routes site-defaults)
+    ;; TODO: restrict to github for release
+    :access-control-allow-origin [#".*"]
+    :access-control-allow-methods [:get :post :put :delete]))
