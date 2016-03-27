@@ -22,7 +22,7 @@
   (while @running
     (broadcast-step)))
 
-(defonce broadcast-thread
+(defn start-broadcast-thread []
   (.start (Thread. broadcast-loop)))
 
 (defmulti msg :id)

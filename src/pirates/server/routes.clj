@@ -15,13 +15,6 @@
                                            "guest")))))
    user-id))
 
-(defn login! [req]
-  (let [{:keys [session params]} req
-        {:keys [user-id]} params]
-    (println "Login request:" params)
-    {:status 200
-     :session (assoc session :uid (unique-uid user-id))}))
-
 (defn status [req]
   (prn "SYS" (into {} system))
   {:status 200})
@@ -31,13 +24,8 @@
     (GET "/status" req (status req))
     (GET "/chsk" req ((:ring-ajax-get-or-ws-handshake (:sente system)) req))
     (POST "/chsk" req ((:ring-ajax-post (:sente system)) req))
-    (POST "/login" req (login! req))
     (resources "/")
     (not-found "Not Found")))
 
 (def handler
-  (wrap-cors
-    (wrap-defaults site-routes site-defaults)
-    ;; TODO: restrict to github for release
-    :access-control-allow-origin [#".*"]
-    :access-control-allow-methods [:get :post :put :delete]))
+  (wrap-defaults site-routes site-defaults))

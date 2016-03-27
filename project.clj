@@ -29,45 +29,41 @@
 
   :source-paths ["src"]
 
-  :clean-targets ^{:protect false} ["target"
-                                    "js/compiled"
-                                    "resources/public/js/compiled"
-                                    "resources/public/js/devcards"]
+  :clean-targets ^{:protect false} ["target" "resources/public/js/compiled"]
 
-  :main pirates.server.main
+  :main ^:skip-aot pirates.server.main
 
-  :cljsbuild
-  {:builds
-   {"dev"
-    {:source-paths ["src"]
-     :figwheel {}
-     :compiler {:main pirates.client.main
-                :asset-path "js/compiled/out"
-                :output-to "resources/public/js/compiled/pirates.client.js"
-                :output-dir "resources/public/js/compiled/out"
-                :source-map-timestamp true}}
-    "devcards"
-    {:source-paths ["src"]
-     :figwheel {:devcards true}
-     :compiler {:main pirates.client.main
-                :asset-path "js/devcards"
-                :output-to "resources/public/js/compiled/devcards.js"
-                :output-dir "resources/public/js/devcards"
-                :source-map-timestamp true}}
-    "min"
-    {:source-paths ["src"]
-     :compiler {:output-to "resources/public/js/compiled/pirates.client.js"
-                :output-dir "resources/public/js/compiled"
-                :main pirates.client.main
-                :optimizations :simple
-                ;; TODO: make compatible with :advanced mode
-                :source-map "resources/public/js/compiled/pirates.client.js.map"
-                :source-map-timestamp true}}}}
-
-  :figwheel {:css-dirs ["resources/public/css"]}
-
-  :profiles {:dev {:env {:dev? "true"}
-                   :plugins [[lein-figwheel "0.5.1"]
-                             ;; TODO: remove
-                             [fipp "0.6.4"]]}
-             :uberjar {:env {:production "true"}}})
+  :profiles
+  {:dev {:env {:dev? "true"}
+         :plugins [[lein-figwheel "0.5.1"]
+                   ;; TODO: remove
+                   [fipp "0.6.4"]]
+         :cljsbuild
+         {:builds
+          {"dev"
+           {:source-paths ["src"]
+            :figwheel {:css-dirs ["resources/public/css"]}
+            :compiler {:main pirates.client.main
+                       :asset-path "js/compiled/client"
+                       :output-to "resources/public/js/compiled/pirates.client.js"
+                       :output-dir "resources/public/js/compiled/client"
+                       :source-map-timestamp true}}
+           "devcards"
+           {:source-paths ["src"]
+            :figwheel {:devcards true
+                       :css-dirs ["resources/public/css"]}
+            :compiler {:main pirates.client.main
+                       :asset-path "js/compiled/devcards"
+                       :output-to "resources/public/js/compiled/devcards.js"
+                       :output-dir "resources/public/js/compiled/devcards"
+                       :source-map-timestamp true}}
+           "min"
+           {:source-paths ["src"]
+            :compiler {:output-to "resources/public/js/compiled/pirates.client.js"
+                       :output-dir "resources/public/js/compiled/min"
+                       :main pirates.client.main
+                       :optimizations :simple
+                       ;; TODO: make compatible with :advanced mode
+                       :source-map "resources/public/js/compiled/pirates.client.js.map"
+                       :source-map-timestamp true}}}}}
+   :uberjar {:uberjar-name "pirates-standalone.jar"}})
