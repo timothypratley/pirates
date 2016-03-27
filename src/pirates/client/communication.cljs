@@ -47,9 +47,17 @@
 
 #_(add-watch session/state :k maybe-send-viewpoint)
 
+#_
+(defn get-chsk-url
+  "Connect to a configured server instead of the page host"
+  [protocol chsk-host chsk-path type]
+  (let [protocol (case type :ajax protocol
+                            :ws   (if (= protocol "https:") "wss:" "ws:"))]
+    (str protocol "//" config/server chsk-path)))
+
 (defn start []
   (let [{:keys [chsk ch-recv send-fn state]}
-        (sente/make-channel-socket! "/chsk" {:type :auto :host "localhost:3000"})]
+        (sente/make-channel-socket! "/chsk" {:type :auto :host "piratesserver.herokuapp.com"})]
     (def chsk-send! send-fn)
     (sente/start-chsk-router! ch-recv event-msg-handler*)
     (js/window.setInterval

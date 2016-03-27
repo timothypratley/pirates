@@ -33,6 +33,8 @@
 
   :main ^:skip-aot pirates.server.main
 
+  :figwheel {:css-dirs ["resources/public/css"]}
+
   :profiles
   {:dev {:env {:dev? "true"}
          :plugins [[lein-figwheel "0.5.1"]
@@ -42,7 +44,7 @@
          {:builds
           {"dev"
            {:source-paths ["src"]
-            :figwheel {:css-dirs ["resources/public/css"]}
+            :figwheel {}
             :compiler {:main pirates.client.main
                        :asset-path "js/compiled/client"
                        :output-to "resources/public/js/compiled/pirates.client.js"
@@ -50,8 +52,7 @@
                        :source-map-timestamp true}}
            "devcards"
            {:source-paths ["src"]
-            :figwheel {:devcards true
-                       :css-dirs ["resources/public/css"]}
+            :figwheel {:devcards true}
             :compiler {:main pirates.client.main
                        :asset-path "js/compiled/devcards"
                        :output-to "resources/public/js/compiled/devcards.js"
@@ -66,4 +67,5 @@
                        ;; TODO: make compatible with :advanced mode
                        :source-map "resources/public/js/compiled/pirates.client.js.map"
                        :source-map-timestamp true}}}}}
-   :uberjar {:uberjar-name "pirates-standalone.jar"}})
+   :uberjar {:uberjar-name "pirates-standalone.jar"
+             :aot :all}})

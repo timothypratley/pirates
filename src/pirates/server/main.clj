@@ -5,7 +5,7 @@
     [clojure.string :as string])
   (:gen-class))
 
-(defn -main [port & args]
+(defn -main [& [port]]
   (when-not (string/blank? port)
     ;; TODO: do it nicer
     (reset! system/port (Integer/parseInt port)))
