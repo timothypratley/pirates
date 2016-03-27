@@ -5,7 +5,7 @@
     [pirates.client.menus :as menus]
     [pirates.client.map :as map]
     [pirates.client.model :as model]
-    [pirates.client.communication :as comm]
+    [pirates.client.communication :as communication]
     [reagent.core :as reagent]))
 
 (defn main-view []
@@ -21,6 +21,7 @@
 
 (defn main []
   (when-let [app (dom/getElement "app")]
-    (reagent/render-component [main-view] app)))
+    (reagent/render-component [main-view] app)
+    (communication/start)))
 
 (main)

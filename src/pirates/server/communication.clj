@@ -11,13 +11,16 @@
     (when-let [chsk-send! (:chsk-send! (:sente system))]
       (chsk-send! uid [:pirates/players (:players @world/world)]))))
 
+(defn broadcast-step []
+  (try
+    (Thread/sleep 2000)
+    (broadcast-world)
+    (catch Exception ex
+      (println "Error sending world:" ex))))
+
 (defn broadcast-loop []
   (while @running
-    (try
-      (Thread/sleep 500)
-      (broadcast-world)
-      (catch Exception ex
-        (println "Error sending world:" ex)))))
+    (broadcast-step)))
 
 (defonce broadcast-thread
   (.start (Thread. broadcast-loop)))

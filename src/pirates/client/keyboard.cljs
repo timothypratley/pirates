@@ -22,7 +22,7 @@
     (ge/unlisten dom-element "keydown" handler)
     (ge/unlisten dom-element "keyup" handler)))
 
-(defn pressed? [{:keys [codes]} & key-codes]
+(defn pressed? [{:keys [codes]} key-codes]
   (every? (fn [k] (aget codes k)) key-codes))
 
 (defn altitude [camera dy]
@@ -42,41 +42,67 @@
     (< a (- js/Math.PI)) (recur (+ a (* 2 js/Math.PI)))
     :else a))
 
-(defn handle-keyboard [kb camera ship]
-  (doseq [[k action]
-          [[KeyCodes/LEFT
-            (fn a-left-action []
-              (set! (.. ship -rotation -y)
-                    (normalize-angle (+ (.. ship -rotation -y) 0.03)))
-              (when-let [model (aget (.-children ship) 1)]
-                (set! (.. model -rotation -x) -0.2)))]
-           [KeyCodes/RIGHT
-            (fn a-right-action []
-              (set! (.. ship -rotation -y)
-                    (normalize-angle (- (.. ship -rotation -y) 0.03)))
-              (when-let [model (aget (.-children ship) 1)]
-                (set! (.. model -rotation -x) 0.2)))]
-           [KeyCodes/UP
-            (fn an-up-action []
-              (altitude camera 10))]
-           [KeyCodes/DOWN
-            (fn a-down-action []
-              (altitude camera -10))]
-           [KeyCodes/Q
+(defn blink [ship]
+  (.translateX ship -50))
+
+(defn bkb [model]
+  (.set (.-scale model) 2 2 2))
+
+(defn submerge [ship]
+  (.translateY ship -5))
+
+
+(def key-bindings
+  {:left #{#{KeyCodes/LEFT}}
+   :right #{#{KeyCodes/RIGHT}}
+   :up #{#{KeyCodes/UP}}
+   :down #{#{KeyCodes/DOWN}}
+   :primary #{#{KeyCodes/ONE}}
+   :secondary #{#{KeyCodes/TWO}}
+   :ultimate #{#{KeyCodes/THREE}}})
+
+(def steers
+  {:left 1
+   :right -1})
+
+(def altitudes
+  {:up 10
+   :down -10})
+
+(defn sum-keys [kb m]
+  (reduce
+    (fn sum-deltas [acc [dir delta]]
+      (if (some #(pressed? kb %) (key-bindings dir))
+        (+ acc delta)
+        acc))
+    0
+    m))
+
+(defn handle-keyboard [app-state kb camera ship]
+  (let [steer (sum-keys kb steers)]
+    ;; TODO: not here? normalize to time?
+    (when-not (zero? steer)
+      (set! (.. ship -rotation -y) (normalize-angle (+ (.. ship -rotation -y) (* steer 0.03)))))
+    (swap! app-state assoc :steer steer))
+  (let [dy (sum-keys kb altitudes)]
+    (when-not (zero? dy)
+      (altitude camera dy)))
+  (doseq [[ks action]
+          [[#{KeyCodes/Q}
             (fn a-ultimate []
               (when-not (:ultimate @cooldowns)
-                (.translateX ship -50)
+
                 (swap! cooldowns assoc :ultimate 60)))]
-           [KeyCodes/W
+           [#{KeyCodes/W}
             (fn a-w []
               (when-not (:w @cooldowns)
-                (.translateY ship -5)
+
                 (swap! cooldowns assoc :w 60)))]
-           [KeyCodes/E
+           [#{KeyCodes/E}
             (fn a-e []
               (when-not (:e @cooldowns)
                 (when-let [model (aget (.-children ship) 1)]
                   (.set (.-scale model) 2 2 2)
                   (swap! cooldowns assoc :e 60))))]]]
-    (when (pressed? kb k)
+    (when (pressed? kb ks)
       (action))))

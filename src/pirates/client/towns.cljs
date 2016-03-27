@@ -243,9 +243,11 @@
     :faction "Dutch"}})
 
 (defn town-locations-card []
-  (let [app-state (reagent/atom {:camera {:position [0 500 0]}
-                         :towns pirates.towns/initial-towns})]
-    [pirates.map/world-map app-state]))
+  (let [app-state (reagent/atom {:camera {:position [0 500 0]
+                                          :look-at [0 0 0]}
+                                 :towns initial-towns})]
+    (fn a-town-locations-card []
+      [pirates.client.map/world-map app-state])))
 
 (defcard-rg town-locations
   [town-locations-card])

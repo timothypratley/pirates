@@ -7,9 +7,9 @@
     [com.stuartsierra.component :as component]
     [environ.core :refer [env]]
     [taoensso.sente.server-adapters.http-kit :refer [sente-web-server-adapter]]
-    [pirates.server.world :as world]))
+    [pirates.server.names :as names]))
 
 (defn prod-system []
   (component/system-map
-    :sente (new-channel-sockets msg sente-web-server-adapter {:user-id-fn world/unique-pirate-name})
+    :sente (new-channel-sockets msg sente-web-server-adapter {:user-id-fn names/unique-pirate-name})
     :web (new-web-server (env :http-port 3000) #'handler)))

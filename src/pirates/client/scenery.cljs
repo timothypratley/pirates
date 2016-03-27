@@ -40,37 +40,39 @@
     (let [context (.getContext canvas "2d")]
       (.drawImage context img 0 0)
       (for [[r g b a] (-> context
-                          (.getImageData 0 0 w h)
-                          (.-data)
-                          (array-seq)
-                          (->> (partition 4)))]
+                        (.getImageData 0 0 w h)
+                        (.-data)
+                        (array-seq)
+                        (->> (partition 4)))]
         (let [z (/ (+ r g b) 50)]
           (if (< z 2) -1 z))))))
 
 (defn create-terrain [scene]
   (let [img (js/Image.)]
     (set! (.-onload img)
-          (fn create-terrain-img-load []
-            (let [w (.-width img)
-                  h (.-height img)
-                  geometry (js/THREE.PlaneGeometry. (* w 10) (* h 10) (dec w) (dec h))
-                  ;;texture (js/THREE.ImageUtils.loadTexture "img/caribbean.png")
-                  ;;material (js/THREE.MeshLambertMaterial. #js {"map" texture})
-                  material (js/THREE.MeshBasicMaterial. #js {:color 0x004400 :side js/THREE.DoubleSide})
-                  plane (js/THREE.Mesh. geometry material)
-                  data (get-height-data img)]
-              (set! (.. plane -rotation -x) (/ js/Math.PI -2))
-              (dotimes [i (* w h)]
-                (set! (-> plane .-geometry .-vertices (aget i) .-z) (nth data i)))
-              (.add scene plane))))
+      (fn create-terrain-img-load []
+        (let [w (.-width img)
+              h (.-height img)
+              geometry (js/THREE.PlaneGeometry. (* w 10) (* h 10) (dec w) (dec h))
+              ;;texture (js/THREE.ImageUtils.loadTexture "img/caribbean.png")
+              ;;material (js/THREE.MeshLambertMaterial. #js {"map" texture})
+              material (js/THREE.MeshBasicMaterial. #js {:color 0x004400 :side js/THREE.DoubleSide})
+              plane (js/THREE.Mesh. geometry material)
+              data (get-height-data img)]
+          (set! (.. plane -rotation -x) (/ js/Math.PI -2))
+          (dotimes [i (* w h)]
+            (set! (-> plane .-geometry .-vertices (aget i) .-z) (nth data i)))
+          (.add scene plane))))
     (set! (.-src img) "img/caribbean.png")))
 
-(defn load-model [filename parent]
+(defn load-model [parent filename]
   (let [loader (js/THREE.ObjectLoader.)]
     (.load loader (str "models/" filename)
-           (fn [obj]
-             (set! (.-x obj.position) -0.5)
-             (.add parent obj)))))
+      (fn [obj]
+        (set! (.. obj -rotation -y) js/Math.PI)
+        (set! (.. obj -position -x) 0.5)
+        (set! (.-name obj) "model")
+        (.add parent obj)))))
 
 (defn create-water [scene renderer camera directional-light-position]
   (let [normals (js/THREE.ImageUtils.loadTexture. "img/waternormals.jpg")]
@@ -83,8 +85,8 @@
                        :waterNormals normals,
                        :alpha 0.8,
                        :sunDirection (-> directional-light-position
-                                         (.clone)
-                                         (.normalize))
+                                       (.clone)
+                                       (.normalize))
                        :sunColor 0xffffff,
                        :waterColor 0x001e0f,
                        :distortionScale 35})
