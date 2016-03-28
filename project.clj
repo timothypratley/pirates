@@ -63,11 +63,10 @@
            "min"
            {:source-paths ["src" "prod"]
             :compiler {:output-to "resources/public/js/compiled/pirates.client.js"
-                       :output-dir "resources/public/js/compiled/min"
                        :main pirates.client.main
-                       :optimizations :simple
+                       :optimizations :simple}}}}}
                        ;; TODO: make compatible with :advanced mode
-                       :source-map "resources/public/js/compiled/pirates.client.js.map"
-                       :source-map-timestamp true}}}}}
+                       ;;:source-map "resources/public/js/compiled/pirates.client.js.map"
+                       ;;:source-map-timestamp true}}}}}
    :uberjar {:uberjar-name "pirates-standalone.jar"
              :aot :all}})

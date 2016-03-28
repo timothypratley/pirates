@@ -1,8 +1,7 @@
 #!/bin/bash
 set -e
 cd $(dirname $0)
-lein clean
-lein cljsbuild once min
+lein do clean, cljsbuild once min
 cd resources/public
 git init
 git add .
