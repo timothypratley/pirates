@@ -4,5 +4,7 @@
     [pirates.client.towns :as towns]))
 
 (defonce app-state
-  (reagent/atom {:status :in-port
-                 :towns towns/initial-towns}))
+  (reagent/atom
+    {:status :in-port
+     :towns towns/initial-towns
+     :ship-type :sloop}))

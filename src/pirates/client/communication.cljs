@@ -1,5 +1,6 @@
 (ns pirates.client.communication
   (:require
+    [pirates.client.config :as config]
     [pirates.client.logging :as log]
     [pirates.client.model :as model]
     [taoensso.sente :as sente]))
@@ -57,7 +58,8 @@
 
 (defn start []
   (let [{:keys [chsk ch-recv send-fn state]}
-        (sente/make-channel-socket! "/chsk" {:type :auto :host "piratesserver.herokuapp.com"})]
+        (sente/make-channel-socket! "/chsk" {:type :auto
+                                             :host config/server})]
     (def chsk-send! send-fn)
     (sente/start-chsk-router! ch-recv event-msg-handler*)
     (js/window.setInterval

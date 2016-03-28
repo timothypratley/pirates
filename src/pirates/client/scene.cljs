@@ -16,6 +16,8 @@
     (-> (.-name) (set! name))
     (.add (text-sprite/make name))
     (scenery/load-model "pirate-ship-large.json")
+    (.add (doto (js/THREE.Object3D.)
+            (-> (.-name) (set! "firing"))))
     (->> (.add scene))))
 
 (defn wave-roll [ship t steer]
@@ -39,9 +41,36 @@
       (set! (.. ship -rotation -y) heading)
       (wave-roll ship (+ t heading) steer))))
 
+(defn blast [fire]
+  (let [g (doto (js/THREE.Geometry.)
+            (-> (.-vertices) (.push (js/THREE.Vector3. 0 0.5 0)))
+            (-> (.-vertices) (.push (js/THREE.Vector3. 2 0.5 30)))
+            (-> (.-vertices) (.push (js/THREE.Vector3. -2 0.5 30)))
+            (-> (.-faces) (.push (js/THREE.Face3. 0 2 1)))
+            (.computeFaceNormals))
+        m (js/THREE.Mesh. g (js/THREE.MeshNormalMaterial.))]
+    (set! (.-name m) (name fire))
+    (case fire
+      :fire-left (set! (.. m -rotation -y) js/Math.PI)
+      :fire-forward (set! (.. m -rotation -y) (/ js/Math.PI 2))
+      :fire-backward (set! (.. m -rotation -y) (/ js/Math.PI -2))
+      nil)
+    m))
+
+(defn firing-blasts [app-state ship]
+  (let [fired (frequencies (map second (get-in @app-state [:client :gun-crew-used])))
+        firing (.getObjectByName ship "firing")]
+    (doseq [c (.-children firing)]
+      (when-not (fired (.-name c))
+        (.remove firing c)))
+    (doseq [[fire c] fired]
+      (when-not (.getObjectByName firing (name fire))
+        (.add firing (blast fire))))))
+
 (defn world-map-three-render [t app-state renderer scene camera ship water]
   (other-players t app-state scene)
   (wave-roll ship t (:steer @app-state))
+  (firing-blasts app-state ship)
   (when (= (:status @app-state) :sailing)
     ;; Use a speed normalized to time
     ;; TODO: put x/y in game instead of ship?

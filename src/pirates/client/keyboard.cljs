@@ -23,7 +23,9 @@
     (ge/unlisten dom-element "keyup" handler)))
 
 (defn pressed? [{:keys [codes]} key-codes]
-  (every? (fn [k] (aget codes k)) key-codes))
+  (doto
+    (every? (fn [k] (aget codes k)) key-codes)
+    (when (prn "PRESSED"))))
 
 (defn altitude [camera dy]
   (set! (.. camera -position -y)
@@ -51,15 +53,24 @@
 (defn submerge [ship]
   (.translateY ship -5))
 
-
 (def key-bindings
-  {:left #{#{KeyCodes/LEFT}}
-   :right #{#{KeyCodes/RIGHT}}
+  {:left #{#{KeyCodes/LEFT} #{KeyCodes/A}}
+   :right #{#{KeyCodes/RIGHT} #{KeyCodes/D}}
+   :fire-left #{#{KeyCodes/Q}}
+   :fire-right #{#{KeyCodes/E}}
+   :fire-forward #{#{KeyCodes/W}}
+   :fire-backward #{#{KeyCodes/X}}
+   ;;:fire2-left #{#{KeyCodes/Z}}
+   ;;:fire2-right #{#{KeyCodes/C}}
+   :sails #{#{KeyCodes/S}}
    :up #{#{KeyCodes/UP}}
    :down #{#{KeyCodes/DOWN}}
    :primary #{#{KeyCodes/ONE}}
    :secondary #{#{KeyCodes/TWO}}
    :ultimate #{#{KeyCodes/THREE}}})
+
+(def fire-bindings
+  (select-keys key-bindings [:fire-left :fire-right :fire-forward :fire-backward]))
 
 (def steers
   {:left 1
@@ -78,6 +89,29 @@
     0
     m))
 
+;; TODO: forward/aft placements
+(def ships
+  {:sloop {:gun-crew-count 2}
+   :caravel {:gun-crew-count 2}
+   :merchantman {:gun-crew-count 2}
+   :escort {:gun-crew-count 4}
+   :frigate {:gun-crew-count 8}
+   :galleon {:gun-crew-count 16}})
+
+(defn gun-crew-available [app-state]
+  (< (count (get-in @app-state [:client :gun-crew-used]))
+    (:gun-crew-count (ships (:ship-type @app-state)))))
+
+(defn gun-crew-used [app-state fire]
+  (swap! app-state update-in [:client :gun-crew-used] conj [(js/Date.) fire]))
+
+(defn expired? [[d fire]]
+  (let [ms-expired (- (.getTime (js/Date.)) (.getTime d))]
+    (>= ms-expired 2000)))
+
+(defn release-gun-crews [app-state]
+  (swap! app-state update-in [:client :gun-crew-used] #(remove expired? %)))
+
 (defn handle-keyboard [app-state kb camera ship]
   (let [steer (sum-keys kb steers)]
     ;; TODO: not here? normalize to time?
@@ -87,6 +121,14 @@
   (let [dy (sum-keys kb altitudes)]
     (when-not (zero? dy)
       (altitude camera dy)))
+  (release-gun-crews app-state)
+  (when (gun-crew-available app-state)
+    (when-let [fire (first (shuffle (map key (filter (fn [[action bindings]]
+                                                       (some #(pressed? kb %) bindings))
+                                                     fire-bindings))))]
+      (prn "FIRE!" fire)
+      (gun-crew-used app-state fire)))
+  #_
   (doseq [[ks action]
           [[#{KeyCodes/Q}
             (fn a-ultimate []

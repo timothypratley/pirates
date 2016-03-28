@@ -45,7 +45,7 @@
          :cljsbuild
          {:builds
           {"dev"
-           {:source-paths ["src"]
+           {:source-paths ["src" "dev"]
             :figwheel {}
             :compiler {:main pirates.client.main
                        :asset-path "js/compiled/client"
@@ -53,7 +53,7 @@
                        :output-dir "resources/public/js/compiled/client"
                        :source-map-timestamp true}}
            "devcards"
-           {:source-paths ["src"]
+           {:source-paths ["src" "dev"]
             :figwheel {:devcards true}
             :compiler {:main pirates.client.main
                        :asset-path "js/compiled/devcards"
@@ -61,7 +61,7 @@
                        :output-dir "resources/public/js/compiled/devcards"
                        :source-map-timestamp true}}
            "min"
-           {:source-paths ["src"]
+           {:source-paths ["src" "prod"]
             :compiler {:output-to "resources/public/js/compiled/pirates.client.js"
                        :output-dir "resources/public/js/compiled/min"
                        :main pirates.client.main
