@@ -83,7 +83,8 @@
               ;; TODO: just set! on this?
               (reset! raf (js/window.requestAnimationFrame world-map-animate))
               (keyboard/handle-keyboard app-state keyboard camera ship)
-              (scene/world-map-three-render t app-state renderer scene camera ship water)))))
+              (scene/world-map-three-render t app-state renderer scene camera ship water))
+             0)))
        :component-will-unmount
        (fn world-map-will-unmount [this]
          ;; TODO: less atomizing

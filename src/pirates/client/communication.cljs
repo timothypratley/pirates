@@ -67,3 +67,11 @@
         (when-let [status (:user @model/app-state)]
           (chsk-send! [:pirates/status status])))
       200)))
+
+(defn fire! [firing]
+  (swap! model/app-state model/fire firing)
+  (chsk-send! [:pirates/fired firing]))
+
+(defn ability! [ability]
+  (swap! model/app-state model/activate-ability ability)
+  (chsk-send! [:pirates/ability ability]))

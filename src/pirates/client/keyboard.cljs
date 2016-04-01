@@ -1,5 +1,6 @@
 (ns pirates.client.keyboard
   (:require
+    [pirates.client.communication :as communication]
     [goog.events :as ge]
     [goog.events.KeyCodes :as KeyCodes]))
 
@@ -23,20 +24,16 @@
     (ge/unlisten dom-element "keyup" handler)))
 
 (defn pressed? [{:keys [codes]} key-codes]
-  (doto
-    (every? (fn [k] (aget codes k)) key-codes)
-    (when (prn "PRESSED"))))
+  (every? (fn [k] (aget codes k)) key-codes))
 
 (defn altitude [camera dy]
   (set! (.. camera -position -y)
-        (min 500 (max 1 (+ (.. camera -position -y)
-                           (/ (.. camera -position -y) dy)))))
+    (min 500 (max 1 (+ (.. camera -position -y)
+                      (/ (.. camera -position -y) dy)))))
   (.lookAt camera (js/THREE.Vector3. 0 (/ (.. camera -position -y) 1.5) 0)))
 
 (defn pan [camera dr]
   (set! (.. camera -position)))
-
-(defonce cooldowns (atom {}))
 
 (defn normalize-angle [a]
   (cond
@@ -72,6 +69,9 @@
 (def fire-bindings
   (select-keys key-bindings [:fire-left :fire-right :fire-forward :fire-backward]))
 
+(def ability-precidence
+  [:ultimate :primary :secondary :sails])
+
 (def steers
   {:left 1
    :right -1})
@@ -102,8 +102,6 @@
   (< (count (get-in @app-state [:client :gun-crew-used]))
     (:gun-crew-count (ships (:ship-type @app-state)))))
 
-(defn gun-crew-used [app-state fire]
-  (swap! app-state update-in [:client :gun-crew-used] conj [(js/Date.) fire]))
 
 (defn expired? [[d fire]]
   (let [ms-expired (- (.getTime (js/Date.)) (.getTime d))]
@@ -111,6 +109,48 @@
 
 (defn release-gun-crews [app-state]
   (swap! app-state update-in [:client :gun-crew-used] #(remove expired? %)))
+
+;; move to model
+(def cooldowns
+  {:ultimate 60000
+   :primary 10000
+   :secondary 20000
+   :sails 2000})
+
+(defn cooldown-expired? [ability d]
+  (let [ms-expired (- (.getTime (js/Date.)) (.getTime d))]
+    (>= ms-expired (cooldowns ability))))
+
+(defn release-cooldowns [app-state]
+  (doseq [[ability d] (:cooldowns @app-state)]
+    (if (cooldown-expired? ability d)
+      (swap! app-state update :cooldowns dissoc ability))))
+
+(defn action-available? [app-state]
+  (let [ms-expired (- (.getTime (js/Date.)) (.getTime (get-in @app-state [:client :action-taken])))]
+    (>= ms-expired 500)))
+
+(defn ability-available? [app-state ability]
+  (not (get-in @app-state [:cooldown ability])))
+
+(defn activated? [app-state kb ability]
+  (and
+    (ability-available? app-state ability)
+    (some #(pressed? kb %) (key-bindings ability))))
+
+(defn activating [app-state kb]
+  (->> ability-precidence
+       (filter #(activated? app-state kb %))
+       (first)))
+
+(defn firing [app-state kb]
+  (when (gun-crew-available app-state)
+    (->> fire-bindings
+         (filter (fn [[action bindings]]
+                   (some #(pressed? kb %) bindings)))
+         (map key)
+         (shuffle)
+         (first))))
 
 (defn handle-keyboard [app-state kb camera ship]
   (let [steer (sum-keys kb steers)]
@@ -122,29 +162,9 @@
     (when-not (zero? dy)
       (altitude camera dy)))
   (release-gun-crews app-state)
-  (when (gun-crew-available app-state)
-    (when-let [fire (first (shuffle (map key (filter (fn [[action bindings]]
-                                                       (some #(pressed? kb %) bindings))
-                                                     fire-bindings))))]
-      (prn "FIRE!" fire)
-      (gun-crew-used app-state fire)))
-  #_
-  (doseq [[ks action]
-          [[#{KeyCodes/Q}
-            (fn a-ultimate []
-              (when-not (:ultimate @cooldowns)
-
-                (swap! cooldowns assoc :ultimate 60)))]
-           [#{KeyCodes/W}
-            (fn a-w []
-              (when-not (:w @cooldowns)
-
-                (swap! cooldowns assoc :w 60)))]
-           [#{KeyCodes/E}
-            (fn a-e []
-              (when-not (:e @cooldowns)
-                (when-let [model (aget (.-children ship) 1)]
-                  (.set (.-scale model) 2 2 2)
-                  (swap! cooldowns assoc :e 60))))]]]
-    (when (pressed? kb ks)
-      (action))))
+  (release-cooldowns app-state)
+  (when (action-available? app-state)
+    (if-let [ability (activating app-state kb)]
+      (communication/ability! ability)
+      (when-let [fire (firing app-state kb)]
+        (communication/fire! fire)))))
