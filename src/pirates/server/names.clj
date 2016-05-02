@@ -28,7 +28,7 @@
   (string/join " " (repeatedly (+ 1 (rand-int 4)) #(rand-nth dictionary))))
 
 (defn client-name [client-id]
-  (first (filter (complement (:players @world/world)) (repeatedly #(pirate-name)))))
+  (first (filter (complement (:players @world/the-world)) (repeatedly #(pirate-name)))))
 
 (def one-hour (* 1000 60 60 24))
 

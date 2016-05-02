@@ -1,7 +1,8 @@
 (ns pirates.server.communication
   (:require
     [pirates.server.world :as world]
-    [reloaded.repl :refer [system]]))
+    [reloaded.repl :refer [system]])
+  (:import [java.util Date]))
 
 (def running
   (atom true))
@@ -9,26 +10,23 @@
 (defn broadcast-world []
   (doseq [uid (some-> system :sente :connected-uids deref :any)]
     (when-let [chsk-send! (:chsk-send! (:sente system))]
-      (chsk-send! uid [:pirates/players (:players @world/world)]))))
+      (chsk-send! uid [:pirates/players (:players @world/the-world)]))))
 
-(defn broadcast-step []
-  (try
-    (Thread/sleep 2000)
-    (broadcast-world)
-    (catch Exception ex
-      (println "Error sending world:" ex))))
-
-(defn broadcast-loop []
+(defn broadcaster []
   (while @running
-    (broadcast-step)))
+    (try
+      (Thread/sleep 2000)
+      (broadcast-world)
+      (catch Exception ex
+        (println "Error sending world:" ex)))))
 
 (defn start-broadcast-thread []
-  (.start (Thread. broadcast-loop)))
+  (.start (Thread. ^Runnable broadcaster)))
 
 (defmulti msg :id)
 
-(defmethod msg :pirates/status [{:keys [?data uid]}]
-  (world/add-player uid ?data))
+(defmethod msg :pirates/status [{:keys [uid ?data]}]
+  (world/update-player (Date.) uid ?data))
 
 (defmethod msg :chsk/uidport-open [{:keys [uid client-id]}]
   (println "New connection:" uid client-id))

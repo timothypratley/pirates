@@ -1,8 +1,9 @@
 (ns pirates.client.keyboard
   (:require
-    [pirates.client.communication :as communication]
     [goog.events :as ge]
-    [goog.events.KeyCodes :as KeyCodes]))
+    [goog.events.KeyCodes :as KeyCodes]
+    [pirates.client.communication :as communication]
+    [pirates.client.model :as model]))
 
 (defn create []
   (let [key-codes #js {}]
@@ -89,53 +90,9 @@
     0
     m))
 
-;; TODO: forward/aft placements
-(def ships
-  {:sloop {:gun-crew-count 2}
-   :caravel {:gun-crew-count 2}
-   :merchantman {:gun-crew-count 2}
-   :escort {:gun-crew-count 4}
-   :frigate {:gun-crew-count 8}
-   :galleon {:gun-crew-count 16}})
-
-(defn gun-crew-available [app-state]
-  (< (count (get-in @app-state [:client :gun-crew-used]))
-    (:gun-crew-count (ships (:ship-type @app-state)))))
-
-
-(defn expired? [[d fire]]
-  (let [ms-expired (- (.getTime (js/Date.)) (.getTime d))]
-    (>= ms-expired 2000)))
-
-(defn release-gun-crews [app-state]
-  (swap! app-state update-in [:client :gun-crew-used] #(remove expired? %)))
-
-;; move to model
-(def cooldowns
-  {:ultimate 60000
-   :primary 10000
-   :secondary 20000
-   :sails 2000})
-
-(defn cooldown-expired? [ability d]
-  (let [ms-expired (- (.getTime (js/Date.)) (.getTime d))]
-    (>= ms-expired (cooldowns ability))))
-
-(defn release-cooldowns [app-state]
-  (doseq [[ability d] (:cooldowns @app-state)]
-    (if (cooldown-expired? ability d)
-      (swap! app-state update :cooldowns dissoc ability))))
-
-(defn action-available? [app-state]
-  (let [ms-expired (- (.getTime (js/Date.)) (.getTime (get-in @app-state [:client :action-taken])))]
-    (>= ms-expired 500)))
-
-(defn ability-available? [app-state ability]
-  (not (get-in @app-state [:cooldown ability])))
-
 (defn activated? [app-state kb ability]
   (and
-    (ability-available? app-state ability)
+    (model/ability-available? app-state ability)
     (some #(pressed? kb %) (key-bindings ability))))
 
 (defn activating [app-state kb]
@@ -144,7 +101,7 @@
        (first)))
 
 (defn firing [app-state kb]
-  (when (gun-crew-available app-state)
+  (when (model/gun-crew-available app-state)
     (->> fire-bindings
          (filter (fn [[action bindings]]
                    (some #(pressed? kb %) bindings)))
@@ -161,9 +118,9 @@
   (let [dy (sum-keys kb altitudes)]
     (when-not (zero? dy)
       (altitude camera dy)))
-  (release-gun-crews app-state)
-  (release-cooldowns app-state)
-  (when (action-available? app-state)
+  (model/release-gun-crews app-state)
+  (model/release-cooldowns app-state)
+  (when (model/action-available? app-state)
     (if-let [ability (activating app-state kb)]
       (communication/ability! ability)
       (when-let [fire (firing app-state kb)]
