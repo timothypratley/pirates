@@ -9,6 +9,9 @@
 (defmethod find-targets :other [world {:keys [player]}]
   (get-in world [:players player :selected]))
 
+(defmethod find-targets :self [world {:keys [player]}]
+  (get-in world [:players player]))
+
 (defn distance [[x1 z1] [x2 z2]]
   (Math/sqrt (+ (* (- x2 x1) (- x2 x1))
                 (* (- z2 z1) (- z2 z1)))))
@@ -21,6 +24,9 @@
 (defmethod range-check :cannon [world {:keys [player targets]}]
   (let [r (* (:cannon constants/ranges) (get-in world [:players player :modifiers :cannon-range] 1))]
     (filter #(in-range? world player r %) targets)))
+
+(defmethod range-check :default [world {:keys [targets]}]
+  targets)
 
 (defmethod apply-ability :fire [world {:keys [player firing t]}]
   (-> world

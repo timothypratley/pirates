@@ -30,9 +30,6 @@
         world))
     world))
 
-(defn check-warmups [world t]
-  (reduce #(check-warmup t %1 %2) world (:players world)))
-
 (defn check-ability-cooldown [^Date t player world [ability ^Date started]]
   (let [cooldown (get-in constants/abilities [ability :cooldown] 10)]
     (if (>= (.getTime t) (+ (.getTime started) (* cooldown 1000)))
@@ -44,16 +41,29 @@
           world
           cooldowns))
 
-(defn check-cooldowns [world t]
-  (reduce #(check-cooldown t %1 %2)
+(defn check-next-ability [t world [player {[started ability :as next-ability] :next-ability}]]
+  (if (and next-ability
+           (> (.getTime t) (+ (.getTime started) 1000)))
+    (update-in world [:players player] dissoc :next-ability)
+    (if (and next-ability
+             (not (world/activating world player))
+             (world/can-activate? world player ability))
+      (-> world
+        (assoc-in [:players player :activating] [t ability])
+        (update-in [:players player] dissoc :next-ability))
+      world)))
+
+(defn check-players [world t f]
+  (reduce #(f t %1 %2)
           world
           (:players world)))
 
 ;; todo produce events!
 (defn tick [world t]
   (-> world
-    (check-warmups t)
-    (check-cooldowns t)))
+    (check-players t check-warmup)
+    (check-players t check-cooldown)
+    (check-players t check-next-ability)))
 
 (defn ticker []
   (while @running

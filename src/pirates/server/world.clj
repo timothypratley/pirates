@@ -23,11 +23,13 @@
     (not (on-cooldown world player ability))))
 
 (defn maybe-with-ability [world t player ability]
-  (if (can-activate? world player ability)
-    (if (activating world player)
-      (assoc-in world [:players player :next-ability] ability)
-      (assoc-in world [:players player :activating] [t ability]))
-    world))
+  (if (= ability :cancel)
+    (update-in world [:players player] dissoc :activating :next-ability)
+    (if (can-activate? world player ability)
+      (if (activating world player)
+        (assoc-in world [:players player :next-ability] [t ability])
+        (assoc-in world [:players player :activating] [t ability]))
+      world)))
 
 (defn with-status [world t uid status ability]
   (-> world
