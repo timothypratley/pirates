@@ -10,4 +10,4 @@
 
 (deftest activating-abilities-test
   (is (not= world1
-            (world/with-status world1 (Date. 0) "Blackbeard" [0 0 0 0 0 0 0] :fire))))
+            (world/with-status world1 (Date. 0) "Blackbeard" [0 0 0 0 0 0 0] [:fire :fire-left]))))

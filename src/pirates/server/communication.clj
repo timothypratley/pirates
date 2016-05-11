@@ -10,12 +10,12 @@
 (defn broadcast-world []
   (doseq [uid (some-> system :sente :connected-uids deref :any)]
     (when-let [chsk-send! (:chsk-send! (:sente system))]
-      (chsk-send! uid [:pirates/players (:players @world/the-world)]))))
+      (chsk-send! uid [:pirates/players @world/the-world]))))
 
 (defn broadcaster []
   (while @running
     (try
-      (Thread/sleep 2000)
+      (Thread/sleep 500)
       (broadcast-world)
       (catch Exception ex
         (println "Error sending world:" ex)))))

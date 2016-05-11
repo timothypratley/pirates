@@ -11,13 +11,22 @@
     (.add (doto (js/THREE.DirectionalLight. 0xffff88 1)
             (-> (.-position) (.copy directional-light-position))))))
 
-(defn make-ship [scene name]
+(defn make-ship [scene id]
   (doto (js/THREE.Object3D.)
-    (-> (.-name) (set! name))
-    (.add (text-sprite/make name))
+    (-> (.-name) (set! id))
+    (.add (text-sprite/make id))
     (scenery/load-model "pirate-ship-large.json")
     (.add (doto (js/THREE.Object3D.)
             (-> (.-name) (set! "firing"))))
+    (->> (.add scene))))
+
+(defn make-projectile [scene id]
+  (doto (js/THREE.Object3D.)
+    (-> (.-name) (set! id))
+    (-> (.. -position -y) (set! 1))
+    (.add (js/THREE.Mesh.
+            (js/THREE.SphereGeometry. 0.5)
+            (js/THREE.MeshNormalMaterial.)))
     (->> (.add scene))))
 
 (defn wave-roll [ship t steer]
@@ -29,10 +38,10 @@
 
 (defn other-players [t app-state scene]
   (let [at (:at @app-state)]
-    (doseq [[player-id [x2 z2 heading2 steer]] (:players @app-state)
+    (doseq [[player-id {[x2 z2 heading2 steer] :status}] (:players @app-state)
             :when (not= player-id (:uid @app-state))
-            :let [previous (.getObjectByName scene player-id)
-                  ship (or previous (make-ship scene player-id))
+            :let [ship (or (.getObjectByName scene player-id)
+                           (make-ship scene player-id))
                   heading1 (.. ship -rotation -y)
                   x1 (.. ship -position -x)
                   z1 (.. ship -position -z)
@@ -40,6 +49,15 @@
       (.set (.-position ship) x 0 z)
       (set! (.. ship -rotation -y) heading)
       (wave-roll ship (+ t heading) steer))))
+
+;; TODO: mix projectiles and players as entities?
+(defn update-projectiles [t app-state scene]
+  (let [{:keys [at projectiles]} @app-state]
+    (doseq [[projectile-id {:keys [x z heading]}] projectiles
+            :let [projectile (or (.getObjectByName scene projectile-id)
+                                 (make-projectile scene projectile-id))]]
+      (.set (.-position projectile) x 1 z)
+      (set! (.. projectile -rotation -y) heading))))
 
 (defn blast [fire]
   (let [g (doto (js/THREE.Geometry.)
@@ -69,6 +87,7 @@
 
 (defn world-map-three-render [t app-state renderer scene camera ship water]
   (other-players t app-state scene)
+  (update-projectiles t app-state scene)
   (wave-roll ship t (:steer @app-state))
   (firing-blasts app-state ship)
   (when (= (:status @app-state) :sailing)

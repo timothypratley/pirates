@@ -9,7 +9,7 @@
       (- (* t (js/Math.sin heading))))))
 
 (defn bezier [a heading1 d heading2 t]
-  (prn "A" (.-x a) (.-y a) heading1 1 "B" (.-x d) (.-y d) heading2 t)
+  ;;(prn "A" (.-x a) (.-y a) heading1 1 "B" (.-x d) (.-y d) heading2 t)
   (let [dist (/ (.distanceTo a d) 2.0)
         b (-> a
             (.clone)

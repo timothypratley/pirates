@@ -28,15 +28,16 @@
 (defmethod event-msg-handler :chsk/recv
   [{:keys [?data]}]
   ;; TODO: should be a dispatch type??
-  (swap! model/app-state assoc
-         :players (second ?data)
-         :at (js/Date.)))
+  ;; keep under a separate path?
+  (swap! model/app-state merge
+         (second ?data)
+         {:at (js/Date.)}))
 
 (defmethod event-msg-handler :chsk/handshake
   [{:keys [?data]}]
   (let [[?uid ?csrf-token] ?data]
-    (log/debug "Handshake:" ?uid ?csrf-token
-               (swap! model/app-state assoc :uid ?uid))))
+    (log/debug "Handshake:" ?uid ?csrf-token)
+    (swap! model/app-state assoc :uid ?uid)))
 
 ;; TODO: what about rate limiting?
 ;; maybe on direction change etc?
@@ -70,8 +71,8 @@
 
 (defn fire! [firing]
   ;(swap! model/app-state model/fire firing)
-  (chsk-send! [:pirates/fired firing]))
+  (chsk-send! [:pirates/status [(:user @model/app-state) [:fire firing]]]))
 
 (defn ability! [ability]
   ;(swap! model/app-state model/activate-ability ability)
-  (chsk-send! [:pirates/ability ability]))
+  (chsk-send! [:pirates/status [(:user @model/app-state) [ability]]]))

@@ -7,17 +7,17 @@
   :min-lein-version "2.6.1"
 
   :dependencies [[org.clojure/clojure "1.8.0"]
-                 [org.clojure/clojurescript "1.8.34"]
+                 [org.clojure/clojurescript "1.8.51"]
                  [org.clojure/core.async "0.2.374"]
-                 [org.clojure/core.memoize "0.5.8"]
+                 [org.clojure/core.memoize "0.5.9"]
                  [com.stuartsierra/component "0.3.1"]
                  [com.taoensso/sente "1.8.1"]
                  [compojure "1.5.0"]
-                 [cljsjs/three "0.0.72-0"]
+                 [cljsjs/three "0.0.76-0"]
                  [cljsjs/ocean "1.0.0"]
-                 [bidi "2.0.4"]
-                 [devcards "0.2.1-6"]
-                 [environ "1.0.2"]
+                 [bidi "2.0.9"]
+                 [devcards "0.2.1-7"]
+                 [environ "1.0.3"]
                  [http-kit "2.1.19"]
                  [reagent "0.5.1"]
                  [reloaded.repl "0.2.1"]
@@ -27,7 +27,7 @@
                  [timothypratley/patchin "0.3.5"]]
 
   :plugins [[lein-cljsbuild "1.1.3"]
-            [lein-environ "1.0.2"]]
+            [lein-environ "1.0.3"]]
 
   :source-paths ["src"]
 
@@ -39,9 +39,9 @@
 
   :profiles
   {:dev {:env {:dev? "true"}
-         :plugins [[lein-figwheel "0.5.1"]
+         :plugins [[lein-figwheel "0.5.3-1"]
                    ;; TODO: remove
-                   [fipp "0.6.4"]]
+                   [fipp "0.6.5"]]
          :cljsbuild
          {:builds
           {"dev"
