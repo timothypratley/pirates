@@ -33,7 +33,8 @@
       (swap! app-state update :cooldowns dissoc ability))))
 
 (defn action-available? [app-state]
-  (let [ms-expired (- (.getTime (js/Date.)) (.getTime (get-in @app-state [:client :action-taken])))]
+  (let [ms-expired (- (.getTime (js/Date.))
+                      (.getTime (get-in @app-state [:client :action-taken])))]
     (>= ms-expired 500)))
 
 (defn ability-available? [app-state ability]

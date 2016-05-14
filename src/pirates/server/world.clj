@@ -13,7 +13,9 @@
 (defn has-ability? [world player ability]
   (or
     (constants/base-abilities ability)
-    (let [captain-class (get-in world [:players player :captain-class])]
+    (let [captain-class (get-in world [:players player :captain-class]
+                                ;; TODO: why isn't this set?
+                                :freebooter)]
       (get-in constants/captains [captain-class :abilities ability]))))
 
 (defn can-activate? [world player ability]

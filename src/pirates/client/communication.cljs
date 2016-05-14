@@ -3,7 +3,9 @@
     [pirates.client.config :as config]
     [pirates.client.logging :as log]
     [pirates.client.model :as model]
-    [taoensso.sente :as sente]))
+    [taoensso.sente :as sente]
+    [pirates.shared.constants :as constants]
+    [clojure.set :as set]))
 
 (declare chsk-send!)
 
@@ -75,4 +77,9 @@
 
 (defn ability! [ability]
   ;(swap! model/app-state model/activate-ability ability)
-  (chsk-send! [:pirates/status [(:user @model/app-state) [ability]]]))
+  (chsk-send! [:pirates/status [(:user @model/app-state) [(-> (:captain-class @model/app-state)
+                                                              constants/captains
+                                                              :abilities
+                                                              ;; TODO: store a reverse lookup
+                                                              set/map-invert
+                                                              ability)]]]))
