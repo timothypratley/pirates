@@ -7,7 +7,7 @@ Wiki: https://github.com/timothypratley/pirates/wiki
 
 ## Overview
 
-Sail around, sink ships, battle other playser.
+Sail around, sink ships, battle other players.
 
 
 ## Deployment
